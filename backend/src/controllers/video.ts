@@ -8,6 +8,7 @@ import Video from "../models/videoModel.js";
 import { fileCleanup, isAbortedFunction } from "../middlewares/cleanUp.js";
 import User from "../models/userModel.js";
 import cloudinary from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadFile } from "../utils/features.js";
 
 declare module 'express-serve-static-core' {
     interface Request {
@@ -19,7 +20,7 @@ declare module 'express-serve-static-core' {
             title ?:string,
             subject?:string,
             description?:string,
-            thumbanailUrl?: string,
+            thumbnailUrl?: string,
             thumbnailId?: string
 
         };
@@ -217,9 +218,10 @@ export const uploadVideo = [
     const subject = req.fileInfo?.subject
     const title = req.fileInfo?.title
     const description = req.fileInfo?.description
-    const thumbnail = req.fileInfo?.thumbanailUrl
+    const defaultThumbnail = 'https://res.cloudinary.com/dqy6ffx6k/image/upload/v1724767116/images_pcz0p0.jpg'
     const id = req.id
     const  video = req.fileInfo?.fileUrl
+    const videoId = req.fileInfo?.filePublicId
     let isAborted = false;
     req.on('aborted', async() => {
         isAborted = true;
@@ -238,25 +240,26 @@ export const uploadVideo = [
             });
         }
     });
-    if(!title || !subject || !video || !description ){
+    if(!title || !subject ||!video || !description ){
+        console.log(video)
         return next(new errorHandler("Enter All Fields",400))
     }
 
    try{ 
-    const defaultThumbNail = "https://res.cloudinary.com/dqy6ffx6k/image/upload/v1724767116/images_pcz0p0.jpg"
     const upload = await Video.create({
         title,
         description,
         video ,
+        videoId,
         user : id,
         subject,
         likes : 0,
-        thumbnail : defaultThumbNail
+        thumbnail : defaultThumbnail
     })
 
     return res.status(201).json({
         success : true,
-        message : "Video Uploaded Successfully"
+        message : `Video Uploaded Successfully with Video Public ID : ${videoId}`
    })
 }catch(error){
     next (error)
@@ -264,6 +267,38 @@ export const uploadVideo = [
 
 
 })]
+
+export const uploadThumbnail = TryCatch(async(req:Request,res:Response,next:NextFunction)=>{
+    const videoId = req.body.videoId
+    const id  = req.id
+    const thumbnailImage = req.file
+    //uploadFile(req,next)
+    if(!videoId){
+        if(thumbnailImage && thumbnailImage.path) fs.unlinkSync(thumbnailImage.path)
+        return next(new errorHandler("Enter Video Id ",400))
+    }
+    if(videoId){
+        const video = await Video.findById(videoId);
+        if(!video) {
+            if(thumbnailImage && thumbnailImage.path) fs.unlinkSync(thumbnailImage.path)
+            return next(new errorHandler('No Video Found',400))
+        }
+        if(video){
+            if(video.user != id){
+                if(thumbnailImage && thumbnailImage.path) fs.unlinkSync(thumbnailImage.path)
+                return next(new errorHandler('Not Authorized',401))
+            }
+            const result = await Video.findByIdAndUpdate(videoId,{
+                thumbnail : thumbnailImage?.path
+            })
+
+           return res.status(200).json({
+                success : true,
+                message : `Thumbnail Update for Video  ID : ${videoId} with ${thumbnailImage?.path}`
+            })
+        }
+    }
+})
 export const updateVideo = TryCatch(async(req : Request<{id:string},{},updateVideoType>,res : Response,next : NextFunction)=>{
     const userId = req.id
     const {title,description,subject} = req.body
@@ -299,14 +334,15 @@ export const deleteVideo = TryCatch(async(req : Request,res : Response,next : Ne
         const videoInfo = await Video.findById(id)
         if(!videoInfo) return next(new errorHandler("Video Not Found",400))
         if(videoInfo?.user != userId) return next(new errorHandler("Not Authorized To  Delete Video",401))
-        const videoPath = videoInfo.video;
-        const fullPath = path.resolve(videoPath!);
+        const videoPath = videoInfo.videoId;
         console.log(videoPath)
-        try {
-            await cloudinary.uploader.destroy(fullPath, { resource_type: 'video' });
-            console.log('Video deleted successfully');
-        } catch (error) {
-            console.error('Error deleting video after finish:', error);
+        try{
+            await deleteFromCloudinary(videoPath!,'video')
+            if(videoInfo.thumbnail) fs.unlinkSync(videoInfo.thumbnail)
+
+        }catch(error){
+            return next(error)
+           // return next(new errorHandler('Error While deleting',400))
         }
         await Video.deleteOne({_id:id})
         res.status(200).json({

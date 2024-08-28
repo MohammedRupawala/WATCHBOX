@@ -9,6 +9,10 @@ const schema = new mongoose.Schema({
         type : String,
         required : [true]
     },
+    videoId:{
+        type:String,
+        required:[true]
+    },
     title : {
         type:String,
         required : [true,'Enter Video Title']

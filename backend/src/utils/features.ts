@@ -2,10 +2,10 @@ import jwt, { JwtPayload } from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import { secretKey } from '../app.js'
 import cloudinary from './cloudinary.js'
-import { fileUploadType } from '../types/types.js'
-import errorHandler from './utilclass.js'
+import {Readable} from 'stream'
+import { CloudinaryUploadResult, CustomRequest } from '../types/types.js'
 import { NextFunction } from 'express'
-import { fileCleanup } from '../middlewares/cleanUp.js'
+import errorHandler from './utilclass.js'
 export const connectDB = (uri : string)=>{
     mongoose.connect(uri,{
         dbName:"MediaPlayer"
@@ -32,13 +32,25 @@ export const verifyToken  = (token: string):string | null=>{
 }
 
 export const deleteFromCloudinary = async(id:string,type : string)=>{
-try
-{   console.log('File Deleted')
+     console.log('File Deleted')
      await  cloudinary.uploader.destroy(id,{resource_type:type})
-}  catch(cleanupError){
-    console.error('Error While Deleting File',cleanupError)
-} 
 }
+
+
+export const uploadFile  = (req:CustomRequest,next:NextFunction)  => {
+    if(!req.file) return next(new errorHandler('Enter ThumbNail',400))
+  cloudinary.uploader.upload(req.file!.path,async(error,result)=>{
+    if(error){
+        return next(new errorHandler('Error While Uploading',400))
+    }
+    req.fileInfo!.thumbnailUrl = result?.secure_url
+    req.fileInfo!.thumbnailId = result?.public_id
+
+    next()
+  })
+
+ 
+  };
 
 
 

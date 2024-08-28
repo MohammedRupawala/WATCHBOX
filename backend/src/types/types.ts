@@ -77,3 +77,9 @@ export interface CustomRequest extends Request {
         subject?: string;
     },
 }
+
+export interface CloudinaryUploadResult {
+    secure_url: string;
+    public_id: string;
+    // Add other properties if needed
+  }
