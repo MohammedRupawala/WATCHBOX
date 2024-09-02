@@ -18,13 +18,28 @@ export type userSignInType = {
     password : string
 }
 
-export type newVideoType  = {
-    title : string,
-    description : string,
-    likes : number,
-    user : string,
-    video : string,
-    subject : string
+// export type newVideoType  = {
+//     title : string,
+//     description : string,
+//     likes : number,
+//     user : string,
+//     video : string,
+//     subject : string
+//     thumbnail : string
+// }
+export interface CustomRequest extends Request {
+    files?: {
+        [fieldname: string]: Express.Multer.File[]; // Ensure you use the correct type for files
+    };
+    fileInfo?: {
+        filePublicId?: string;
+        fileUrl?: string;
+        thumbnailId?: string;
+        thumbnailUrl?: string;
+        subject : string,
+        title : string,
+        description : string
+    };
 }
 
 export  type updateVideoType = {
@@ -64,19 +79,6 @@ export type fileUploadType = {
     subject ?: string
 }
 
-
-
-export interface CustomRequest extends Request {
-    fileInfo?: {
-        thumbnailUrl ?: string
-        thumbnailId ?: string
-        fileUrl ?: string
-        filePublicId ?: string
-        title?: string;
-        description?: string;
-        subject?: string;
-    },
-}
 
 export interface CloudinaryUploadResult {
     secure_url: string;

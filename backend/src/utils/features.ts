@@ -3,9 +3,10 @@ import mongoose from 'mongoose'
 import { secretKey } from '../app.js'
 import cloudinary from './cloudinary.js'
 import {Readable} from 'stream'
-import { CloudinaryUploadResult, CustomRequest } from '../types/types.js'
-import { NextFunction } from 'express'
+import {  CustomRequest } from '../types/types.js'
+import { Request,Response,NextFunction } from 'express'
 import errorHandler from './utilclass.js'
+import { TryCatch } from '../middlewares/errorHandler.js'
 export const connectDB = (uri : string)=>{
     mongoose.connect(uri,{
         dbName:"MediaPlayer"
@@ -37,20 +38,32 @@ export const deleteFromCloudinary = async(id:string,type : string)=>{
 }
 
 
-export const uploadFile  = (req:CustomRequest,next:NextFunction)  => {
-    if(!req.file) return next(new errorHandler('Enter ThumbNail',400))
-  cloudinary.uploader.upload(req.file!.path,async(error,result)=>{
-    if(error){
-        return next(new errorHandler('Error While Uploading',400))
+
+    export const  CloudinaryUploadResult = async(filePath : string,fileType : "image" | "video")=>{
+        try {
+            // const result = await cloudinary.uploader.upload_large(filePath, {
+            //     resource_type: fileType
+            // });
+            // console.log("Cloudinary Upload Result:", result.secure_url);
+            // return result;
+            const result = await cloudinary.uploader.upload(filePath, {
+                resource_type: fileType,
+                chunk_size: 5000000,  // Adjust as needed
+            });
+
+            if (!result || !result.secure_url || !result.public_id) {
+                throw new Error('Cloudinary upload result is missing required fields.');
+            }
+
+            console.log('Upload Successful:', result);
+            return {
+                secure_url: result.secure_url,
+                public_id: result.public_id,
+            };
+        } catch (error) {
+            console.error('Error while uploading to Cloudinary:', error);
+            throw new Error('Error while uploading to Cloudinary');
+        }
     }
-    req.fileInfo!.thumbnailUrl = result?.secure_url
-    req.fileInfo!.thumbnailId = result?.public_id
-
-    next()
-  })
-
- 
-  };
-
 
 

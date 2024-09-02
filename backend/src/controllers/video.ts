@@ -2,12 +2,12 @@ import { NextFunction, Request,Response } from "express";
 import fs from "fs"
 import path from 'path'
 import { TryCatch } from "../middlewares/errorHandler.js";
-import { baseQuery, newVideoType, searchQuery, updateVideoType } from "../types/types.js";
+import { baseQuery, CustomRequest, searchQuery, updateVideoType } from "../types/types.js";
 import errorHandler from "../utils/utilclass.js";
 import Video from "../models/videoModel.js";
 import User from "../models/userModel.js";
 import cloudinary from "../utils/cloudinary.js";
-import { deleteFromCloudinary, uploadFile } from "../utils/features.js";
+import { CloudinaryUploadResult, deleteFromCloudinary } from "../utils/features.js";
 
 declare module 'express-serve-static-core' {
     interface Request {
@@ -212,67 +212,78 @@ export  const getUserVideo = TryCatch(async(req : Request,res : Response,next : 
         next(new errorHandler("Error While Fetching Videos",400))
     }
 })
-export const uploadVideo = [
-    TryCatch(async(req : Request<{},{},newVideoType>,res : Response,next : NextFunction)=>{
-    const subject = req.fileInfo?.subject
-    const title = req.fileInfo?.title
-    const description = req.fileInfo?.description
-    const thumbnail = req.fileInfo?.thumbnailUrl
-    const id = req.id
-    const  video = req.fileInfo?.fileUrl
-    const videoId = req.fileInfo?.filePublicId
-    const thumbnailId = req.fileInfo?.thumbnailId
-
-    let isAborted = false;
-    req.on('aborted', async() => {
-        isAborted = true;
-        console.log('in last aborted',isAborted)
-        console.log('Request Aborted');
-
-        // Handle cleanup if needed
-        if (req.fileInfo && req.fileInfo.filePublicId) {
-            console.log('Deleting file due to request abortion');
-            cloudinary.uploader.destroy(req.fileInfo.filePublicId, { resource_type: 'video' }, (error, result) => {
-                if (error) {
-                    console.error('Error deleting video on abort:', error);
-                } else {
-                    console.log('Video deleted successfully on abort:', result);
-                }
-            });
+export const uploadVideo = TryCatch(async(
+    req: Request<any>,
+    res: Response,
+    next: NextFunction
+)=>{
+    const customReq = req as CustomRequest;
+    const { title, subject, description } = customReq.body;
+    const videoFile = customReq.files?.['video']?.[0];
+    const thumbnailFile = customReq.files?.['thumbnail']?.[0];
+    const  id = req.id
+    if(!videoFile || !thumbnailFile || !subject || !title || !description){
+       if(videoFile && videoFile.path){
+         if (fs.existsSync(videoFile.path)) {
+         fs.unlinkSync(videoFile.path);
         }
-    });
-    if(!title || !subject ||!video || !description || !thumbnail ){
-        console.log("File Deleted")
-       if (thumbnail){ await deleteFromCloudinary(req.fileInfo?.thumbnailId!,"image")}
-        else {
-            await deleteFromCloudinary(req.fileInfo?.filePublicId!,"video")
-        }
-        return next(new errorHandler("Enter All Fields",400))
+    }
+        if(thumbnailFile && thumbnailFile.path){
+            if (fs.existsSync(thumbnailFile.path)) {
+            fs.unlinkSync(thumbnailFile.path);
+           }}
+        
+        return next(new errorHandler('Enter All Details',400))
     }
 
-   try{ 
-    const upload = await Video.create({
+    let videoResult: { secure_url?: string; public_id?: string } | undefined;
+    let thumbnailResult: { secure_url?: string; public_id?: string } | undefined;
+
+    try{
+    const  videoResult = await CloudinaryUploadResult(videoFile.path,'video')
+    const  thumbnailResult = await CloudinaryUploadResult(thumbnailFile.path,'image')
+    const videoId = videoResult.public_id
+    const video = videoResult.secure_url
+    const thumbnailId =  thumbnailResult.public_id
+    const thumbnail =  thumbnailResult.secure_url
+    console.log("Video ID",videoId)
+    // if(!video || !videoId || !thumbnailId || !thumbnail ){
+    //     console.log('Details Not Present')
+    //     throw new Error('Missing required fields in Cloudinary upload results');
+    // }
+
+
+    const result = await Video.create({
+        video,
+        videoId,
+        thumbnail,
+        thumbnailId, 
         title,
         description,
-        video ,
-        videoId,
-        user : id,
         subject,
         likes : 0,
-        thumbnail,
-        thumbnailId
+        user : id
     })
+    if(thumbnailFile && thumbnailFile.path) fs.unlinkSync(thumbnailFile.path)
+    if(videoFile && videoFile.path) fs.unlinkSync(videoFile.path)
 
-    return res.status(201).json({
-        success : true,
-        message : `Video Uploaded Successfully with Video Public ID : ${videoId}`
-   })
-}catch(error){
-    next (error)
-}
+        return res.status(200).json({
+            succes:true,
+            message : "Video Upload Successfully"
+        })
+    }catch(error){
+        if (fs.existsSync(thumbnailFile.path)) {
+            fs.unlinkSync(thumbnailFile.path);
+        }
+        if (fs.existsSync(videoFile.path)) {
+            fs.unlinkSync(videoFile.path);
+        }
+        if(videoResult?.public_id) await deleteFromCloudinary(videoResult.public_id,'video')
+        if(thumbnailResult?.public_id) await deleteFromCloudinary(thumbnailResult.public_id,'image')
+        next(error)
+    }
 
-
-})]
+})
 
 export const updateVideo = TryCatch(async(req : Request<{id:string},{},updateVideoType>,res : Response,next : NextFunction)=>{
     const userId = req.id
