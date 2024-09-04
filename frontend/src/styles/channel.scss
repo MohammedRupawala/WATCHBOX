@@ -1,0 +1,189 @@
+.channel {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the content horizontally */
+    padding: 2rem;
+    background-color: #121212;
+    color: #fff;
+  }
+  
+  .profile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 1200px; /* Limit the width of the profile section */
+    
+    > div {
+      &:first-of-type {
+        margin-left: 3rem;
+  
+        > img {
+          border-radius: 50%;
+          width: 150px;
+          height: 150px;
+          object-fit: cover;
+  
+          &:hover {
+            cursor: pointer;
+          }
+        }
+      }
+  
+      &:last-of-type {
+        margin-left: 2rem;
+  
+        > h2, > h5 {
+            font-size: larger;
+          &:hover {
+            cursor: pointer;
+          }
+        }
+      }
+    }
+  }
+  
+  .videos {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center; /* Center content horizontally */
+    width: 100%;
+    max-width: 1200px; /* Limit the width of the videos section */
+  }
+  
+  aside {
+    margin-bottom: 1.5rem;
+    >h3{
+        font-weight: 600;
+        font-size: 3rem;
+    } /* Increased bottom margin for separation */
+  }
+  
+  article {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    width: 100%; /* Ensure it takes full width */
+    justify-content: flex-start; /* Center the video cards */
+  }
+  
+  .user-video-card {
+    background-color: #333;
+    border-radius: 12px;
+    overflow: hidden;
+    width: calc(25% - 1.5rem); /* Fixed width for up to 4 cards per row */
+    min-width: 250px; /* Ensure cards do not get too small */
+    max-width: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.3);
+    }
+  
+    .thumbnail-container {
+      width: 100%;
+      background-color: #222;
+      border-radius: 12px;
+      position: relative;
+  
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+  
+      .update-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+        z-index: 10;
+  
+        &:hover {
+          background-color: #0056b3;
+          transform: scale(1.1);
+        }
+      }
+    }
+  
+    .details-container {
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      border-radius: 0 0 12px 12px;
+  
+      div:first-of-type {
+        flex-shrink: 0;
+        margin-right: 0.75rem;
+        border-radius: 50%;
+        overflow: hidden;
+  
+        img {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border: 2px solid #555;
+        }
+      }
+  
+      div:last-of-type {
+        flex-grow: 1;
+  
+        > p {
+          margin: 0.2rem 0;
+          color: #fff;
+          font-weight: 600;
+  
+          &:hover {
+            text-decoration: underline;
+          }
+  
+          &:first-of-type {
+            font-weight: bold;
+            font-size: 1.1rem;
+          }
+  
+          &:nth-of-type(2) {
+            font-size: 1rem;
+          }
+  
+          &:last-of-type {
+            font-size: 0.9rem;
+            color: #bbb;
+          }
+        }
+      }
+    }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .user-video-card {
+      width: calc(33.33% - 1.5rem); /* Adjust for 3 cards per row on smaller screens */
+    }
+  }
+  
+  @media (max-width: 800px) {
+    .user-video-card {
+      width: calc(50% - 1.5rem); /* Adjust for 2 cards per row on smaller screens */
+    }
+  }
+  
+  @media (max-width: 500px) {
+    .user-video-card {
+      width: calc(100% - 1.5rem); /* Adjust for 1 card per row on smallest screens */
+    }
+  }
+  

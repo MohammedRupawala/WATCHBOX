@@ -67,7 +67,7 @@ const categories : string[] = [
         }}/>
         <div className='video-list'>
             {
-                Array.from({ length: 21 }).map((_, index) => (
+                Array.from({ length: 1 }).map((_, index) => (
                     <VideoCard 
                       key={index}
                       title="Man United vs Man City"

@@ -8,7 +8,7 @@ const Home = () => {
         <NavBar/>
       </div>
        <div className='video-grid'>
-       {Array.from({ length: 12 }).map((_, index) => (
+       {Array.from({ length: 1 }).map((_, index) => (
           <VideoCard 
             key={index}
             title="Man United vs Man City"

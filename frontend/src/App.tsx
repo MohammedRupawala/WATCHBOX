@@ -5,6 +5,7 @@ const Home = lazy(()=>import('./pages/home'))
 const Search = lazy(()=>import('./pages/search'))
 const SignIn = lazy(()=>import('./pages/signIn'))
 const SignUp = lazy(()=>import('./pages/signUp'))
+const Channel = lazy(()=>import('./pages/yourChannel'))
 
 
 
@@ -17,6 +18,7 @@ function App() {
         <Route path='/search' element={<Search/>}></Route>
         <Route path='/sign-in' element={<SignIn/>}></Route>
         <Route path='/sign-up' element={<SignUp/>}></Route>
+        <Route path='/your-channel' element={<Channel/>}></Route>
         
       </Routes>
       
